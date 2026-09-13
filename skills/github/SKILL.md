@@ -281,6 +281,10 @@ curl -X DELETE http://localhost:4001/repos/octocat/hello-world \
 # Read a file or list a directory at a branch, tag, or commit
 curl "http://localhost:4001/repos/octocat/hello-world/contents/README.md?ref=main"
 
+# Request raw bytes from a file Contents or README response with GitHub's raw media type
+curl "http://localhost:4001/repos/octocat/hello-world/contents/README.md?ref=main" \
+  -H "Accept: application/vnd.github.raw+json"
+
 # Download raw file content from the URL advertised by contents and commit responses
 curl http://localhost:4001/octocat/hello-world/raw/main/README.md
 
