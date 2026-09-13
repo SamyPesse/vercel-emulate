@@ -1,6 +1,6 @@
 # Getting Started
 
-Local drop-in replacement for Vercel, GitHub, Google, Slack, Apple, Microsoft, Okta, AWS, Resend, Stripe, MongoDB Atlas, Clerk, and Linear APIs. Built for CI and no-network sandboxes. Fully stateful, production-fidelity API emulation. Not mocks.
+Local drop-in replacement for Vercel, GitHub, Google, Slack, Apple, Microsoft, Okta, AWS, Resend, Stripe, MongoDB Atlas, Clerk, Linear, and Twilio APIs. Built for CI and no-network sandboxes. Fully stateful, production-fidelity API emulation. Not mocks.
 
 ## Quick Start
 
@@ -23,6 +23,7 @@ All services start with sensible defaults. No config file needed:
 - **MongoDB Atlas** on `http://localhost:4010`
 - **Clerk** on `http://localhost:4011`
 - **Linear** on `http://localhost:4012`
+- **Twilio** on `http://localhost:4013`
 
 ## CLI
 
@@ -77,6 +78,16 @@ npx emulate list
       <td><code>--seed</code></td>
       <td>auto-detect</td>
       <td>Path to seed config (YAML or JSON)</td>
+    </tr>
+    <tr>
+      <td><code>--base-url</code></td>
+      <td>none</td>
+      <td>Override the advertised base URL (supports <code>{'{service}'}</code> template)</td>
+    </tr>
+    <tr>
+      <td><code>--portless</code></td>
+      <td>off</td>
+      <td>Serve over HTTPS through portless and register service aliases</td>
     </tr>
     <tr>
       <td><code>--generated-secrets-file</code></td>
