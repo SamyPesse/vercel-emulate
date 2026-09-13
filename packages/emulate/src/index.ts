@@ -23,7 +23,7 @@ Framework adapters:
 
 GitHub API coverage:
   Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
-  commit history, commit details, and ref comparisons.
+  commit history, commit details, ref comparisons, and Checks list-by-ref endpoints for branch and tag refs containing slashes.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
@@ -38,8 +38,15 @@ Google Calendar discovery:
 Google OIDC:
   Discovery advertises RS256 ID tokens, and GET /oauth2/v3/certs returns the RSA public key used to verify them.
 
+Resend API coverage:
+  POST /emails and POST /emails/batch support 24-hour Idempotency-Key replay without duplicate emails or webhooks.
+
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
+
+Slack message limits:
+  Slack text fields are limited to 40,000 Unicode characters. Longer text is truncated safely,
+  and successful Web API responses include message_truncated warning metadata.
 `,
   );
 

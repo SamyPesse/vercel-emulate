@@ -27,6 +27,8 @@ All services start with sensible defaults. No config file needed:
 
 Stripe webhooks configured with a secret include a `Stripe-Signature` header signed over the timestamp and raw request body.
 
+Resend `POST /emails` and `POST /emails/batch` support 24-hour `Idempotency-Key` replay, returning the original email IDs without duplicate emails or webhooks.
+
 ## CLI
 
 ```bash
@@ -524,6 +526,8 @@ github:
 
 JWT authentication: sign a JWT with `{ iss: "<app_id>" }` using the app's private key (RS256). The emulator verifies the signature and resolves the app.
 
+Installation access tokens act as the configured GitHub App bot for repository writes. Repository ownership, selected repository access, and requested App permissions remain enforced. Pull request merges require `contents: write` on the base repository. Pull request branch updates require `pull_requests: write` on the pull request repository and `contents: write` on the head repository.
+
 Inspect secret-free metadata for minted installation tokens at `GET /_emulate/installation-tokens`.
 
 **App webhook delivery**: When events occur on repos where a GitHub App is installed, the emulator mirrors real GitHub behavior:
@@ -767,8 +771,8 @@ Every endpoint below is fully stateful. Creates, updates, and deletes persist in
 - Secrets: repo + org CRUD
 
 ### Checks
-- Check runs: create, update, get, annotations, rerequest, list by ref/suite
-- Check suites: create, get, preferences, rerequest, list by ref
+- Check runs: create, update, get, annotations, rerequest, list by ref/suite. Ref based lookups accept branch and tag refs containing slashes.
+- Check suites: create, get, preferences, rerequest, list by ref. Ref based lookups accept branch and tag refs containing slashes.
 - Automatic suite status rollup from check run results
 
 ### Misc
@@ -813,6 +817,8 @@ Google ID tokens are RS256-signed JWTs. The discovery document advertises RS256,
 ## Slack API
 
 Fully stateful Slack Web API emulation with channels, messages, threads, reactions, user profiles, presence, modern file uploads, pins, bookmarks, views, OAuth v2, and incoming webhooks. Chat writes preserve common rich message fields such as `blocks`, `attachments`, `metadata`, formatting flags, unfurl flags, and client message ids. Conversation writes update archive state, names, topics, purposes, membership, DMs, MPIMs, and read cursors. User writes update profile fields, status, custom fields, and deterministic active or away presence. File writes support the current external upload flow with local upload URLs, file share messages, reads, lists, downloads, and deletes. Pin and bookmark writes support channel message pins and link bookmarks. View writes support App Home publishing and modal stacks. Seeded OAuth apps and OAuth installs create bot users and installation records. OAuth exchanges and explicit token seeds create scoped token records. Supported write state changes dispatch Slack `event_callback` payloads to configured webhook URLs.
+
+Slack message text is limited to 40,000 Unicode characters across chat writes, incoming webhooks, and file upload initial comments. Longer text is truncated at a Unicode code point boundary before it is stored or dispatched. Successful Web API responses include `warning: "message_truncated"` and `response_metadata` with the matching warning and explanatory message. Rich fields such as `blocks` and `attachments` are preserved unchanged.
 
 ### Auth & Chat
 - `POST /api/auth.test` - test authentication

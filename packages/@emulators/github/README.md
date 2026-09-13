@@ -127,8 +127,8 @@ npm install @emulators/github
 - Secrets: repo + org CRUD
 
 ### Checks
-- Check runs: create, update, get, annotations, rerequest, list by ref/suite
-- Check suites: create, get, preferences, rerequest, list by ref
+- Check runs: create, update, get, annotations, rerequest, list by ref/suite. Ref based lookups accept branch and tag refs containing slashes.
+- Check suites: create, get, preferences, rerequest, list by ref. Ref based lookups accept branch and tag refs containing slashes.
 - Automatic suite status rollup from check run results
 
 ### Misc
@@ -143,6 +143,8 @@ npm install @emulators/github
 ## Auth
 
 Public repo endpoints work without auth. Private repos and write operations require a valid token. Pagination uses `page`/`per_page` with `Link` headers.
+
+Installation access tokens act as the configured GitHub App bot for repository writes. Repository ownership, selected repository access, and requested App permissions remain enforced. Pull request merges require `contents: write` on the base repository. Pull request branch updates require `pull_requests: write` on the pull request repository and `contents: write` on the head repository.
 
 ## Seed Configuration
 
