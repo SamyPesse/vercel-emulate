@@ -32,6 +32,9 @@ Linear API coverage:
 Vercel API coverage:
   GET /v7/deployments lists deployments by commit SHA across a team's projects, with cursor pagination.
 
+AWS API coverage:
+  S3 uploads and downloads preserve arbitrary binary payloads, including raw byte lengths and ETags.
+
 Google Calendar discovery:
   GET /discovery/v1/apis/calendar/v3/rest returns the public discovery document for the emulated Calendar v3 surface.
 

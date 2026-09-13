@@ -24,7 +24,7 @@ export function generateReceiptHandle(): string {
   return randomBytes(48).toString("base64url");
 }
 
-export function md5(content: string | Buffer): string {
+export function md5(content: string | Uint8Array): string {
   return createHash("md5").update(content).digest("hex");
 }
 
