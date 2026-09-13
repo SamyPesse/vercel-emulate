@@ -41,6 +41,10 @@ Google Calendar discovery:
 Resend API coverage:
   POST /emails and POST /emails/batch support 24-hour Idempotency-Key replay without duplicate emails or webhooks.
 
+Microsoft OAuth coverage:
+  Refresh tokens are bound to the issuing client and require its client_id and client_secret, or client_secret_basic.
+  Legacy refresh records without a stored client binding remain supported.
+
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
 

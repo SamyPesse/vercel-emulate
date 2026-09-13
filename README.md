@@ -999,7 +999,7 @@ Sign in with Apple emulation with authorization code flow, PKCE support, RS256 I
 
 ## Microsoft Entra ID
 
-Microsoft Entra ID (Azure AD) v2.0 OAuth 2.0 and OpenID Connect emulation with authorization code flow, PKCE, client credentials, RS256 ID tokens, and OIDC discovery.
+Microsoft Entra ID (Azure AD) v2.0 OAuth 2.0 and OpenID Connect emulation with authorization code flow, PKCE, client credentials, client-bound refresh tokens, RS256 ID tokens, and OIDC discovery.
 
 - `GET /.well-known/openid-configuration` - OIDC discovery document
 - `GET /:tenant/v2.0/.well-known/openid-configuration` - tenant-scoped OIDC discovery
@@ -1010,6 +1010,17 @@ Microsoft Entra ID (Azure AD) v2.0 OAuth 2.0 and OpenID Connect emulation with a
 - `GET /v1.0/me` - Microsoft Graph user profile
 - `GET /oauth2/v2.0/logout` - end session / logout
 - `POST /oauth2/v2.0/revoke` - token revocation
+
+Refresh token requests must include the `client_id` and `client_secret` of the client that received the token. Refresh tokens rotate after successful use. Legacy refresh records without a stored client binding remain supported.
+
+```bash
+curl -X POST http://localhost:4005/oauth2/v2.0/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "refresh_token=r_microsoft_...&\
+client_id=example-client-id&\
+client_secret=example-client-secret&\
+grant_type=refresh_token"
+```
 
 ## AWS
 
