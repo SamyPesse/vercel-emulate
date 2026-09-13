@@ -185,6 +185,9 @@ github:
   orgs:
     - login: my-org
       name: My Organization
+      members:
+        - login: octocat
+          role: admin
   repos:
     - owner: octocat
       name: hello-world
@@ -294,6 +297,8 @@ aws:
     roles:
       - role_name: lambda-execution-role
 ```
+
+GitHub organization `members` are optional. Entries reference seeded users by `login`; `role` defaults to `member`, while `admin` creates an organization administrator. Unknown users are ignored.
 
 ### Auth
 
