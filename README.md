@@ -682,7 +682,8 @@ Every endpoint below is fully stateful. Creates, updates, and deletes persist in
 ### Contents & Commit History
 - `GET /repos/:owner/:repo/readme` - get the repository README
 - `GET /repos/:owner/:repo/contents/:path` - get a file or list a directory at a ref
-- `GET /:owner/:repo/raw/:ref/:path` - download file content from advertised raw URLs
+- Send `Accept: application/vnd.github.raw` or `application/vnd.github.raw+json` to file Contents and README requests to receive raw bytes; directory and submodule responses remain JSON
+- `GET /:owner/:repo/raw/:ref/:path` - download file content from advertised raw URLs; this is separate from Accept negotiation
 - `PUT/DELETE /repos/:owner/:repo/contents/:path` - create, update, or delete a file and commit the change
 - `GET /repos/:owner/:repo/commits` - list commits with ref, path, author, and date filters
 - `GET /repos/:owner/:repo/commits/:ref` - get a commit with file diffs and stats

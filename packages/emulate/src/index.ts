@@ -22,7 +22,8 @@ Framework adapters:
   Docs: https://emulate.dev/docs/nextjs and https://emulate.dev/docs/nuxt
 
 GitHub API coverage:
-  Includes repository contents, raw downloads, commit history, commit details, and ref comparisons.
+  Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
+  commit history, commit details, and ref comparisons.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
