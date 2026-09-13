@@ -14,9 +14,11 @@ import {
   formatSlackMessage,
   generateSlackId,
   generateTs,
+  normalizeSlackMessageText,
   parseSlackBody,
   requireSlackScopes,
   slackError,
+  slackMessageTextResponseMetadata,
   slackOk,
 } from "../helpers.js";
 
@@ -199,7 +201,9 @@ export function filesRoutes(ctx: RouteContext): void {
     }
 
     const authUserId = getAuthUserId(authUser);
-    const initialComment = typeof body.initial_comment === "string" ? body.initial_comment : "";
+    const initialCommentText = typeof body.initial_comment === "string" ? body.initial_comment : "";
+    const normalizedInitialComment = normalizeSlackMessageText(initialCommentText);
+    const initialComment = normalizedInitialComment.text;
     const threadTs = typeof body.thread_ts === "string" ? body.thread_ts : undefined;
     const blocks = initialComment ? undefined : parseBlocks(body.blocks);
     if (!initialComment && body.blocks !== undefined && blocks === undefined) return slackError(c, "invalid_blocks");
@@ -255,7 +259,10 @@ export function filesRoutes(ctx: RouteContext): void {
     }
 
     const sharedFiles = targets.length > 0 ? await shareFiles(targets, completedFiles) : completedFiles;
-    return slackOk(c, { files: sharedFiles.map((file) => formatSlackFileForAuth(file, authUser)) });
+    return slackOk(c, {
+      files: sharedFiles.map((file) => formatSlackFileForAuth(file, authUser)),
+      ...slackMessageTextResponseMetadata(normalizedInitialComment),
+    });
 
     async function shareFiles(channels: SlackChannel[], files: SlackFile[]) {
       const updatedFiles = [...files];

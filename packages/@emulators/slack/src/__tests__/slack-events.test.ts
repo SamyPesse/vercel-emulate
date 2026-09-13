@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getSlackStore } from "../index.js";
+import { SLACK_MESSAGE_TEXT_LIMIT } from "../helpers.js";
 import {
   authHeaders,
   captureFetchRequests,
@@ -40,6 +41,31 @@ describe("Slack plugin - event dispatch baseline", () => {
         metadata,
       },
     });
+  });
+
+  it("dispatches the normalized text for over-limit posts and updates", async () => {
+    const { app, store, webhooks } = createSlackTestApp();
+    const capture = captureFetchRequests();
+    registerSlackEventSubscription(webhooks, ["message"]);
+    const channel = getSlackStore(store).channels.findOneBy("name", "general")!.channel_id;
+    const normalized = "x".repeat(SLACK_MESSAGE_TEXT_LIMIT);
+
+    const postRes = await app.request(`${base}/api/chat.postMessage`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ channel, text: `${normalized}tail` }),
+    });
+    const posted = (await postRes.json()) as any;
+    await app.request(`${base}/api/chat.update`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ channel, ts: posted.ts, text: `${normalized}updated` }),
+    });
+
+    const bodies = capture.jsonBodies() as any[];
+    expect(bodies[0].event.text).toBe(normalized);
+    expect(bodies[1].event.message.text).toBe(normalized);
+    expect(bodies[1].event.previous_message.text).toBe(normalized);
   });
 
   it("dispatches IM lifecycle events when chat.postMessage creates a DM by user id", async () => {
