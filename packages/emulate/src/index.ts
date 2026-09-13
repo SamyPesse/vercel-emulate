@@ -23,7 +23,7 @@ Framework adapters:
 
 GitHub API coverage:
   Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
-  commit history, commit details, and ref comparisons.
+  commit history, commit details, ref comparisons, and Checks list-by-ref endpoints for branch and tag refs containing slashes.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
@@ -32,12 +32,22 @@ Linear API coverage:
 Vercel API coverage:
   GET /v7/deployments lists deployments by commit SHA across a team's projects, with cursor pagination.
 
+Google Calendar discovery:
+  GET /discovery/v1/apis/calendar/v3/rest returns the public discovery document for the emulated Calendar v3 surface.
+
+Resend API coverage:
+  POST /emails and POST /emails/batch support 24-hour Idempotency-Key replay without duplicate emails or webhooks.
+
 Microsoft OAuth coverage:
   Refresh tokens are bound to the issuing client and require its client_id and client_secret, or client_secret_basic.
   Legacy refresh records without a stored client binding remain supported.
 
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
+
+Slack message limits:
+  Slack text fields are limited to 40,000 Unicode characters. Longer text is truncated safely,
+  and successful Web API responses include message_truncated warning metadata.
 `,
   );
 
