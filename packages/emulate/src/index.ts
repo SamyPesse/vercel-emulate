@@ -37,6 +37,10 @@ Google Calendar discovery:
 
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
+
+Slack message limits:
+  Slack text fields are limited to 40,000 Unicode characters. Longer text is truncated safely,
+  and successful Web API responses include message_truncated warning metadata.
 `,
   );
 
