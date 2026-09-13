@@ -32,6 +32,9 @@ Linear API coverage:
 Vercel API coverage:
   GET /v7/deployments lists deployments by commit SHA across a team's projects, with cursor pagination.
 
+AWS API coverage:
+  S3 uploads and downloads preserve arbitrary binary payloads, including raw byte lengths and ETags.
+
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
 `,

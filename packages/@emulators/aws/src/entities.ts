@@ -11,7 +11,9 @@ export interface S3Bucket extends Entity {
 export interface S3Object extends Entity {
   bucket_name: string;
   key: string;
-  body: string;
+  body_base64?: string;
+  /** Legacy persisted field. New objects use body_base64. */
+  body?: string;
   content_type: string;
   content_length: number;
   etag: string;
