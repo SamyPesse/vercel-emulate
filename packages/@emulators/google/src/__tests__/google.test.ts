@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Hono } from "@emulators/core";
-import { decodeJwt } from "jose";
+import { decodeJwt, decodeProtectedHeader, importJWK, jwtVerify, type JWK } from "jose";
 import {
   Store,
   WebhookDispatcher,
@@ -214,6 +214,31 @@ describe("Google plugin integration", () => {
 
   beforeEach(() => {
     app = createTestApp().app;
+  });
+
+  it("returns Google OIDC discovery metadata for RS256 tokens", async () => {
+    const res = await app.request(`${base}/.well-known/openid-configuration`);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.issuer).toBe(base);
+    expect(body.jwks_uri).toBe(`${base}/oauth2/v3/certs`);
+    expect(body.id_token_signing_alg_values_supported).toEqual(["RS256"]);
+  });
+
+  it("returns the RSA public key used to sign ID tokens", async () => {
+    const res = await app.request(`${base}/oauth2/v3/certs`);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as { keys: Array<Record<string, unknown>> };
+    expect(body.keys).toHaveLength(1);
+    const key = body.keys[0];
+    expect(key.kty).toBe("RSA");
+    expect(key.kid).toBe("emulate-google-1");
+    expect(key.use).toBe("sig");
+    expect(key.alg).toBe("RS256");
+    expect(key.n).toBeDefined();
+    expect(key.e).toBe("AQAB");
   });
 
   it("returns user info for a valid token", async () => {
@@ -875,10 +900,24 @@ describe("Google plugin integration", () => {
     const tokenBody = (await tokenRes.json()) as {
       access_token: string;
       refresh_token: string;
+      id_token: string;
       scope: string;
     };
     expect(tokenBody.access_token).toMatch(/^google_/);
     expect(tokenBody.refresh_token).toMatch(/^google_refresh_/);
+    expect(tokenBody.id_token).toBeDefined();
+
+    const header = decodeProtectedHeader(tokenBody.id_token);
+    expect(header).toMatchObject({ alg: "RS256", kid: "emulate-google-1", typ: "JWT" });
+
+    const jwksRes = await app.request(`${base}/oauth2/v3/certs`);
+    const jwksBody = (await jwksRes.json()) as { keys: JWK[] };
+    const { payload } = await jwtVerify(tokenBody.id_token, await importJWK(jwksBody.keys[0], "RS256"), {
+      issuer: base,
+      audience: "emu_google_client_id",
+    });
+    expect(payload.email).toBe("testuser@example.com");
+    expect(payload.hd).toBe("example.com");
 
     const refreshRes = await formRequest(app, "/oauth2/token", {
       grant_type: "refresh_token",

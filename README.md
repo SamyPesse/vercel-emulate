@@ -783,11 +783,13 @@ Every endpoint below is fully stateful. Creates, updates, and deletes persist in
 
 OAuth 2.0, OpenID Connect, and mutable Google Workspace-style surfaces for local inbox, calendar, and drive flows.
 
+Google ID tokens are RS256-signed JWTs. The discovery document advertises RS256, and `/oauth2/v3/certs` returns the matching RSA public key used to verify issued tokens.
+
 - `GET /o/oauth2/v2/auth` - authorization endpoint
 - `POST /oauth2/token` - token exchange
 - `GET /oauth2/v2/userinfo` - get user info
 - `GET /.well-known/openid-configuration` - OIDC discovery document
-- `GET /oauth2/v3/certs` - JSON Web Key Set (JWKS)
+- `GET /oauth2/v3/certs` - JSON Web Key Set (JWKS) with the RSA public key for ID token verification
 - `GET /gmail/v1/users/:userId/messages` - list messages with `q`, `labelIds`, `maxResults`, and `pageToken`
 - `GET /gmail/v1/users/:userId/messages/:id` - fetch a Gmail-style message payload in `full`, `metadata`, `minimal`, or `raw` formats
 - `GET /gmail/v1/users/:userId/messages/:messageId/attachments/:id` - fetch attachment bodies
@@ -1281,7 +1283,7 @@ Tokens are configured in the seed config and map to users. Pass them as `Authori
 
 **GitHub**: Public repo endpoints work without auth. Private repos and write operations require a valid token. Pagination uses `page`/`per_page` with `Link` headers.
 
-**Google**: Standard OAuth 2.0 authorization code flow. Configure clients in the seed config.
+**Google**: Standard OAuth 2.0 authorization code flow with RS256-signed OIDC ID tokens. The discovery document advertises RS256 and `/oauth2/v3/certs` returns the RSA public key used to verify issued tokens. Configure clients in the seed config.
 
 **Slack**: All Web API endpoints require `Authorization: Bearer <token>`. Seeded OAuth apps create local installation records, and OAuth v2 flow with user picker UI creates scoped bot tokens. Optional strict scope mode returns `missing_scope` when a token lacks a required method scope.
 
