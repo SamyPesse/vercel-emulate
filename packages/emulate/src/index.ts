@@ -23,7 +23,7 @@ Framework adapters:
 
 GitHub API coverage:
   Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
-  commit history, commit details, and ref comparisons.
+  commit history, commit details, ref comparisons, and Checks list-by-ref endpoints for branch and tag refs containing slashes.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:

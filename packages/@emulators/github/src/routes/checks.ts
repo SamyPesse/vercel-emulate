@@ -392,7 +392,7 @@ export function checksRoutes({ app, store, webhooks, baseUrl }: RouteContext): v
     return c.body(null, 201);
   });
 
-  app.get("/repos/:owner/:repo/commits/:ref/check-suites", (c) => {
+  app.get("/repos/:owner/:repo/commits/:ref{.+}/check-suites", (c) => {
     const owner = c.req.param("owner")!;
     const repoName = c.req.param("repo")!;
     const repo = lookupRepo(gh, owner, repoName);
@@ -708,7 +708,7 @@ export function checksRoutes({ app, store, webhooks, baseUrl }: RouteContext): v
     return c.body(null, 201);
   });
 
-  app.get("/repos/:owner/:repo/commits/:ref/check-runs", (c) => {
+  app.get("/repos/:owner/:repo/commits/:ref{.+}/check-runs", (c) => {
     const owner = c.req.param("owner")!;
     const repoName = c.req.param("repo")!;
     const repo = lookupRepo(gh, owner, repoName);

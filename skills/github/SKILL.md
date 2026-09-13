@@ -533,8 +533,8 @@ curl -X POST http://localhost:4001/repos/octocat/hello-world/check-runs \
   -H "Content-Type: application/json" \
   -d '{"name": "CI", "head_sha": "abc123", "status": "completed", "conclusion": "success"}'
 
-# Check suites: create, get, rerequest, preferences, list by ref
-# Check runs: list for suite, annotations
+# Check suites: create, get, rerequest, preferences, list by ref. Ref based lookups accept branch and tag refs containing slashes.
+# Check runs: list for suite, annotations. Ref based lookups accept branch and tag refs containing slashes.
 # Automatic suite status rollup from check run results
 ```
 
