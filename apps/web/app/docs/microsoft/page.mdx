@@ -1,6 +1,6 @@
 # Microsoft Entra ID
 
-Microsoft Entra ID (Azure AD) v2.0 OAuth 2.0 and OpenID Connect emulation with authorization code flow, PKCE, client credentials, RS256 ID tokens, OIDC discovery, and a Microsoft Graph `/v1.0/me` endpoint.
+Microsoft Entra ID (Azure AD) v2.0 OAuth 2.0 and OpenID Connect emulation with authorization code flow, PKCE, client credentials, client-bound refresh tokens, RS256 ID tokens, OIDC discovery, and a Microsoft Graph `/v1.0/me` endpoint.
 
 ## Endpoints
 
@@ -28,6 +28,19 @@ Include `code_challenge` and `code_challenge_method` (`plain` or `S256`) in the 
 ## Client Credentials
 
 Request tokens for service-to-service flows using `grant_type=client_credentials` with `scope=https://graph.microsoft.com/.default`. Returns an `access_token` only (no `refresh_token` or `id_token`).
+
+## Refresh Tokens
+
+```bash
+curl -X POST http://localhost:4005/oauth2/v2.0/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "refresh_token=r_microsoft_...&\
+client_id=example-client-id&\
+client_secret=example-client-secret&\
+grant_type=refresh_token"
+```
+
+Refresh requests require the `client_id` and `client_secret` of the client that received the refresh token. Successful requests rotate the refresh token. Legacy refresh records without a stored client binding remain supported.
 
 ## ID Token
 

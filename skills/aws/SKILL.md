@@ -6,7 +6,7 @@ allowed-tools: Bash(npx emulate:*), Bash(curl:*)
 
 # AWS Emulator
 
-S3, SQS, IAM, and STS emulation with AWS SDK-compatible S3 paths and query-style SQS/IAM/STS endpoints. All state is in-memory, and responses use AWS-compatible XML.
+S3, SQS, IAM, and STS emulation with AWS SDK-compatible S3 paths and query-style SQS/IAM/STS endpoints. S3 uploads and downloads preserve arbitrary binary payloads, including raw byte lengths and ETags. All state is in-memory, and responses use AWS-compatible XML.
 
 ## Start
 
