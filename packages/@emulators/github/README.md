@@ -144,6 +144,8 @@ npm install @emulators/github
 
 Public repo endpoints work without auth. Private repos and write operations require a valid token. Pagination uses `page`/`per_page` with `Link` headers.
 
+Installation access tokens act as the configured GitHub App bot for repository writes. Repository ownership, selected repository access, and requested App permissions remain enforced. Pull request merges require `contents: write` on the base repository. Pull request branch updates require `pull_requests: write` on the pull request repository and `contents: write` on the head repository.
+
 ## Seed Configuration
 
 ```yaml

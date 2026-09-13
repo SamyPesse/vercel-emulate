@@ -524,6 +524,8 @@ github:
 
 JWT authentication: sign a JWT with `{ iss: "<app_id>" }` using the app's private key (RS256). The emulator verifies the signature and resolves the app.
 
+Installation access tokens act as the configured GitHub App bot for repository writes. Repository ownership, selected repository access, and requested App permissions remain enforced. Pull request merges require `contents: write` on the base repository. Pull request branch updates require `pull_requests: write` on the pull request repository and `contents: write` on the head repository.
+
 Inspect secret-free metadata for minted installation tokens at `GET /_emulate/installation-tokens`.
 
 **App webhook delivery**: When events occur on repos where a GitHub App is installed, the emulator mirrors real GitHub behavior:
