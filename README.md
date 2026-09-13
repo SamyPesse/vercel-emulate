@@ -27,6 +27,8 @@ All services start with sensible defaults. No config file needed:
 
 Stripe webhooks configured with a secret include a `Stripe-Signature` header signed over the timestamp and raw request body.
 
+Resend `POST /emails` and `POST /emails/batch` support 24-hour `Idempotency-Key` replay, returning the original email IDs without duplicate emails or webhooks.
+
 ## CLI
 
 ```bash

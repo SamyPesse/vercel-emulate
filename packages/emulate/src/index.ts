@@ -35,6 +35,9 @@ Vercel API coverage:
 Google Calendar discovery:
   GET /discovery/v1/apis/calendar/v3/rest returns the public discovery document for the emulated Calendar v3 surface.
 
+Resend API coverage:
+  POST /emails and POST /emails/batch support 24-hour Idempotency-Key replay without duplicate emails or webhooks.
+
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
 
