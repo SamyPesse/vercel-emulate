@@ -61,6 +61,7 @@ npm install @emulators/google
 - `GET /gmail/v1/users/:userId/settings/sendAs` — list send-as aliases
 
 ### Calendar
+- `GET /discovery/v1/apis/calendar/v3/rest` — public Calendar v3 REST discovery document
 - `GET /calendar/v3/users/:userId/calendarList` — list calendars
 - `GET /calendar/v3/calendars/:calendarId/events` — list events
 - `POST /calendar/v3/calendars/:calendarId/events` — create event

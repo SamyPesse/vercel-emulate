@@ -933,6 +933,97 @@ describe("Google plugin integration", () => {
     expect(((await userinfoRes.json()) as { hd?: string }).hd).toBe("override.io");
   });
 
+  it("returns the Calendar v3 discovery document without authentication", async () => {
+    const res = await app.request(`${base}/discovery/v1/apis/calendar/v3/rest`);
+    expect(res.status).toBe(200);
+
+    const body = (await res.json()) as {
+      kind: string;
+      discoveryVersion: string;
+      id: string;
+      name: string;
+      version: string;
+      protocol: string;
+      rootUrl: string;
+      baseUrl: string;
+      servicePath: string;
+      basePath: string;
+      parameters: Record<string, { location: string }>;
+      auth: { oauth2: { scopes: Record<string, { description: string }> } };
+      resources: {
+        calendarList: {
+          methods: {
+            list: {
+              path: string;
+              httpMethod: string;
+              parameters: Record<string, unknown>;
+            };
+          };
+        };
+        events: {
+          methods: {
+            list: { path: string; httpMethod: string; scopes: string[] };
+            insert: { path: string; httpMethod: string };
+            delete: { path: string; httpMethod: string };
+          };
+        };
+        freebusy: { methods: { query: { path: string; httpMethod: string } } };
+      };
+    };
+
+    expect(body).toMatchObject({
+      kind: "discovery#restDescription",
+      discoveryVersion: "v1",
+      id: "calendar:v3",
+      name: "calendar",
+      version: "v3",
+      protocol: "rest",
+      rootUrl: `${base}/`,
+      baseUrl: `${base}/calendar/v3/`,
+      servicePath: "calendar/v3/",
+      basePath: "/calendar/v3/",
+    });
+    expect(body.parameters).toHaveProperty("prettyPrint");
+    expect(body.parameters).toHaveProperty("fields");
+    expect(body.auth.oauth2.scopes["https://www.googleapis.com/auth/calendar"]).toEqual({
+      description: expect.any(String),
+    });
+    expect(body.resources.calendarList.methods.list.parameters).not.toHaveProperty("maxResults");
+    expect(body.resources.calendarList.methods.list.parameters).not.toHaveProperty("pageToken");
+    expect(body.resources.events.methods.list.scopes).toContain(
+      "https://www.googleapis.com/auth/calendar.events.freebusy",
+    );
+
+    expect({
+      calendarListList: {
+        path: body.resources.calendarList.methods.list.path,
+        httpMethod: body.resources.calendarList.methods.list.httpMethod,
+      },
+      eventsList: {
+        path: body.resources.events.methods.list.path,
+        httpMethod: body.resources.events.methods.list.httpMethod,
+      },
+      eventsInsert: {
+        path: body.resources.events.methods.insert.path,
+        httpMethod: body.resources.events.methods.insert.httpMethod,
+      },
+      eventsDelete: {
+        path: body.resources.events.methods.delete.path,
+        httpMethod: body.resources.events.methods.delete.httpMethod,
+      },
+      freebusyQuery: {
+        path: body.resources.freebusy.methods.query.path,
+        httpMethod: body.resources.freebusy.methods.query.httpMethod,
+      },
+    }).toEqual({
+      calendarListList: { path: "users/{userId}/calendarList", httpMethod: "GET" },
+      eventsList: { path: "calendars/{calendarId}/events", httpMethod: "GET" },
+      eventsInsert: { path: "calendars/{calendarId}/events", httpMethod: "POST" },
+      eventsDelete: { path: "calendars/{calendarId}/events/{eventId}", httpMethod: "DELETE" },
+      freebusyQuery: { path: "freeBusy", httpMethod: "POST" },
+    });
+  });
+
   it("lists calendar resources, creates events, queries freebusy, and deletes events", async () => {
     const calendarListRes = await app.request(`${base}/calendar/v3/users/me/calendarList`, {
       headers: authHeaders(),
