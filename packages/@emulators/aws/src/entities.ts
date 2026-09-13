@@ -12,7 +12,7 @@ export interface S3Object extends Entity {
   bucket_name: string;
   key: string;
   body_base64?: string;
-  /** Legacy persisted field. New objects use body_base64. */
+  /** Legacy snapshots may contain UTF-8 object data in this field. */
   body?: string;
   content_type: string;
   content_length: number;

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { Hono } from "@emulators/core";
 import { Store, WebhookDispatcher, type AppEnv } from "@emulators/core";
 import { awsPlugin, seedFromConfig, getAwsStore } from "../index.js";
+import { md5 } from "../helpers.js";
 import { createTestApp, testAuthHeaders as authHeaders, testBaseUrl as base } from "./helpers.js";
 
 describe("AWS plugin - S3 Buckets", () => {
@@ -98,26 +99,27 @@ describe("AWS plugin - S3 Objects", () => {
     expect(getRes.headers.get("Content-Type")).toBe("text/plain");
   });
 
-  it("preserves arbitrary binary bytes and their raw length", async () => {
-    const body = Buffer.from([0x00, 0x01, 0x02, 0x7f, 0x80, 0xfe, 0xff]);
-    const expectedEtag = createHash("md5").update(body).digest("hex");
+  it("roundtrips arbitrary bytes with the correct length and ETag", async () => {
+    const payload = Buffer.from([0x00, 0x80, 0xff, 0xc3, 0x28, 0xed, 0xa0, 0x80, 0x00]);
     const putRes = await app.request(`${base}/emulate-default/binary.bin`, {
       method: "PUT",
       headers: { ...authHeaders(), "Content-Type": "application/octet-stream" },
-      body,
+      body: payload,
     });
 
     expect(putRes.status).toBe(200);
-    expect(putRes.headers.get("ETag")).toBe(`"${expectedEtag}"`);
+    expect(putRes.headers.get("ETag")).toBe(`"${md5(payload)}"`);
 
     const getRes = await app.request(`${base}/emulate-default/binary.bin`, {
       method: "GET",
       headers: authHeaders(),
     });
     expect(getRes.status).toBe(200);
-    expect(getRes.headers.get("Content-Length")).toBe(String(body.byteLength));
-    expect(getRes.headers.get("ETag")).toBe(`"${expectedEtag}"`);
-    expect(Buffer.from(await getRes.arrayBuffer())).toEqual(body);
+    expect(Buffer.from(await getRes.arrayBuffer())).toEqual(payload);
+    expect(getRes.headers.get("Content-Length")).toBe(String(payload.byteLength));
+    expect(getRes.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(getRes.headers.get("ETag")).toBe(`"${md5(payload)}"`);
+    expect(getRes.headers.get("Last-Modified")).toBeTruthy();
   });
 
   it("returns 404 for missing object", async () => {
@@ -208,10 +210,10 @@ describe("AWS plugin - S3 Objects", () => {
   });
 
   it("copies an object with x-amz-copy-source", async () => {
-    const body = Buffer.from([0x00, 0x7f, 0x80, 0xff]);
+    const body = "copy me";
     await app.request(`${base}/emulate-default/source.txt`, {
       method: "PUT",
-      headers: { ...authHeaders(), "Content-Type": "application/octet-stream" },
+      headers: { ...authHeaders(), "Content-Type": "text/plain" },
       body,
     });
 
@@ -228,7 +230,7 @@ describe("AWS plugin - S3 Objects", () => {
       headers: authHeaders(),
     });
     expect(getRes.status).toBe(200);
-    expect(Buffer.from(await getRes.arrayBuffer())).toEqual(body);
+    expect(await getRes.text()).toBe(body);
   });
 
   it("reads legacy UTF-8 bodies and stores copied objects as base64", async () => {
@@ -259,6 +261,30 @@ describe("AWS plugin - S3 Objects", () => {
     const copied = getAwsStore(store).s3Objects.findOneBy("key", "legacy-copy.txt");
     expect(copied?.body_base64).toBe(Buffer.from(body).toString("base64"));
     expect(copied?.body).toBeUndefined();
+  });
+
+  it("copies binary data byte-for-byte", async () => {
+    const payload = Buffer.from([0x00, 0x7f, 0x80, 0xff, 0xc3, 0x28]);
+    await app.request(`${base}/emulate-default/binary-source.bin`, {
+      method: "PUT",
+      headers: { ...authHeaders(), "Content-Type": "application/octet-stream" },
+      body: payload,
+    });
+
+    const copyRes = await app.request(`${base}/emulate-default/binary-dest.bin`, {
+      method: "PUT",
+      headers: { ...authHeaders(), "x-amz-copy-source": "/emulate-default/binary-source.bin" },
+    });
+    expect(copyRes.status).toBe(200);
+
+    const getRes = await app.request(`${base}/emulate-default/binary-dest.bin`, {
+      method: "GET",
+      headers: authHeaders(),
+    });
+    expect(Buffer.from(await getRes.arrayBuffer())).toEqual(payload);
+    expect(getRes.headers.get("Content-Length")).toBe(String(payload.byteLength));
+    expect(getRes.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(getRes.headers.get("ETag")).toBe(`"${md5(payload)}"`);
   });
 });
 
@@ -377,13 +403,12 @@ describe("AWS plugin - S3 Presigned POST", () => {
     expect(body).toBe("hello upload");
   });
 
-  it("preserves arbitrary binary bytes through a presigned POST", async () => {
-    const body = Buffer.from([0x00, 0x01, 0x7f, 0x80, 0xfe, 0xff]);
-    const expectedEtag = createHash("md5").update(body).digest("hex");
+  it("roundtrips arbitrary bytes from a presigned POST", async () => {
+    const payload = Buffer.from([0x00, 0x80, 0xff, 0xc3, 0x28, 0xed, 0xa0, 0x80]);
     const form = new FormData();
     form.append("key", "binary-upload.bin");
     form.append("Content-Type", "application/octet-stream");
-    form.append("file", new Blob([body], { type: "application/octet-stream" }));
+    form.append("file", new Blob([payload], { type: "application/octet-stream" }));
 
     const res = await app.request(`${base}/emulate-default`, {
       method: "POST",
@@ -396,9 +421,10 @@ describe("AWS plugin - S3 Presigned POST", () => {
       headers: authHeaders(),
     });
     expect(getRes.status).toBe(200);
-    expect(getRes.headers.get("Content-Length")).toBe(String(body.byteLength));
-    expect(getRes.headers.get("ETag")).toBe(`"${expectedEtag}"`);
-    expect(Buffer.from(await getRes.arrayBuffer())).toEqual(body);
+    expect(Buffer.from(await getRes.arrayBuffer())).toEqual(payload);
+    expect(getRes.headers.get("Content-Length")).toBe(String(payload.byteLength));
+    expect(getRes.headers.get("Content-Type")).toBe("application/octet-stream");
+    expect(getRes.headers.get("ETag")).toBe(`"${md5(payload)}"`);
   });
 
   it("returns 201 XML when success_action_status is 201", async () => {

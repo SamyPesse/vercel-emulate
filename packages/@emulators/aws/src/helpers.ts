@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from "crypto";
 import type { Context } from "@emulators/core";
 import type { ContentfulStatusCode } from "@emulators/core";
+import type { S3Object } from "./entities.js";
 
 const ACCOUNT_ID = "123456789012";
 const DEFAULT_REGION = "us-east-1";
@@ -25,6 +26,13 @@ export function generateReceiptHandle(): string {
 
 export function md5(content: string | Uint8Array): string {
   return createHash("md5").update(content).digest("hex");
+}
+
+export function decodeS3ObjectBody(object: Pick<S3Object, "body_base64"> & { body?: string }): Buffer {
+  if (typeof object.body_base64 === "string") {
+    return Buffer.from(object.body_base64, "base64");
+  }
+  return Buffer.from(object.body ?? "", "utf8");
 }
 
 export function getAccountId(): string {

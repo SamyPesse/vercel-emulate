@@ -469,6 +469,14 @@ curl http://localhost:4002/gmail/v1/users/me/settings/sendAs \
 
 ## Google Calendar API
 
+### Discovery
+
+The Calendar discovery document is public and describes the Calendar v3 methods supported by the emulator:
+
+```bash
+curl http://localhost:4002/discovery/v1/apis/calendar/v3/rest
+```
+
 ### Calendar List
 
 ```bash

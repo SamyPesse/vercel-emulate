@@ -2,7 +2,7 @@ import type { Context } from "@emulators/core";
 import type { AppEnv, RouteContext } from "@emulators/core";
 import type { S3Object } from "../entities.js";
 import { getAwsStore } from "../store.js";
-import { awsXmlResponse, awsErrorXml, md5, escapeXml } from "../helpers.js";
+import { awsXmlResponse, awsErrorXml, decodeS3ObjectBody, md5, escapeXml } from "../helpers.js";
 
 // Handlers are reused across multiple routes (root paths + legacy `/s3/` aliases,
 // with and without trailing slashes). Parameterizing on the bucket/key path pattern
@@ -10,13 +10,6 @@ import { awsXmlResponse, awsErrorXml, md5, escapeXml } from "../helpers.js";
 // `string | undefined`, since those segments are always present for these routes.
 type S3BucketContext = Context<AppEnv, "/:bucket">;
 type S3ObjectContext = Context<AppEnv, "/:bucket/:key">;
-
-function readObjectBody(object: S3Object): Buffer {
-  if (typeof object.body_base64 === "string") {
-    return Buffer.from(object.body_base64, "base64");
-  }
-  return Buffer.from(object.body ?? "", "utf8");
-}
 
 function writeObjectBody(body: Uint8Array): Pick<S3Object, "body_base64" | "body"> {
   return { body_base64: Buffer.from(body).toString("base64"), body: undefined };
@@ -322,7 +315,7 @@ ${prefixesXml}
 
       const etag = srcObj.etag;
       const now = new Date().toISOString();
-      const bodyFields = writeObjectBody(readObjectBody(srcObj));
+      const bodyFields = writeObjectBody(decodeS3ObjectBody(srcObj));
 
       const existing = aws()
         .s3Objects.findBy("bucket_name", bucketName)
@@ -430,7 +423,7 @@ ${prefixesXml}
       headers[`x-amz-meta-${k}`] = v;
     }
 
-    return c.body(readObjectBody(obj), 200, headers);
+    return c.body(decodeS3ObjectBody(obj), 200, headers);
   };
 
   const handleHeadObject = (c: S3ObjectContext) => {
