@@ -75,6 +75,8 @@ curl http://localhost:4001/user \
 
 Public repo endpoints work without auth. Private repos and write operations require a valid token. When no token is provided, requests fall back to the first seeded user.
 
+Installation access tokens act as the configured GitHub App bot for repository writes. Repository ownership, selected repository access, and requested App permissions remain enforced. Pull request merges require `contents: write` on the base repository. Pull request branch updates require `pull_requests: write` on the pull request repository and `contents: write` on the head repository.
+
 ### GitHub App JWT
 
 Configure apps in the seed config with a private key. Sign a JWT with `{ iss: "<app_id>" }` using RS256. The emulator verifies the signature and resolves the app.
