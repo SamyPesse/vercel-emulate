@@ -69,6 +69,9 @@ github:
     - login: my-org
       name: My Organization
       description: A test organization
+      members:
+        - login: octocat
+          role: admin
 
   repos:
     - owner: octocat
@@ -83,6 +86,8 @@ github:
       language: TypeScript
       auto_init: true
 ```
+
+GitHub organization `members` are optional. Each entry references a seeded user by `login`; `role` defaults to `member`, while `admin` creates an organization administrator. Unknown users are ignored.
 
 ## GitHub OAuth Apps
 

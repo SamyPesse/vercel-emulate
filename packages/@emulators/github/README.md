@@ -157,6 +157,9 @@ github:
   orgs:
     - login: my-org
       name: My Organization
+      members:
+        - login: octocat
+          role: admin
   repos:
     - owner: octocat
       name: hello-world
@@ -185,6 +188,8 @@ github:
           account: my-org
           repository_selection: all
 ```
+
+Organization `members` are optional. Each entry references a seeded user by `login`; `role` defaults to `member`, while `admin` creates an organization administrator. Unknown users are ignored. Memberships are backed by the synthetic `members` team, so they also appear through team membership endpoints and grant access to private organization repositories.
 
 The `private_key` field is required when calling `seedFromConfig` directly. To generate omitted keys before seeding, use `materializeGitHubSeedConfig` and retain the returned key material:
 

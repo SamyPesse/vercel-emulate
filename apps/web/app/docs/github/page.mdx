@@ -48,6 +48,27 @@ npx emulate start --service github --seed emulate.config.yaml \
 
 The destination must not exist. emulate removes inherited ACLs, verifies effective owner-only access, and publishes complete JSON before opening listeners or configuring portless. Handled startup failures remove the invocation-owned artifact. A hard termination can leave a complete artifact that must be removed manually after confirming no invocation is using it. Only generated keys appear in the artifact. Linux requires `setfacl` and `getfacl` from the `acl` package. The flag fails closed when access controls cannot be verified and is not supported on Windows. Without `--generated-secrets-file`, CLI seed files still require `private_key`. Direct `seedFromConfig` calls always require it.
 
+## Seed Config
+
+```yaml
+github:
+  users:
+    - login: octocat
+      name: The Octocat
+  orgs:
+    - login: my-org
+      name: My Organization
+      members:
+        - login: octocat
+          role: admin
+  repos:
+    - owner: my-org
+      name: org-repo
+      private: true
+```
+
+Organization `members` are optional. Each entry references a seeded user by `login`; `role` defaults to `member`, and `admin` creates an organization administrator. Unknown users are ignored. Seeded memberships use the synthetic `members` team and grant private organization repository access.
+
 ## Users
 
 - `GET /user` - authenticated user

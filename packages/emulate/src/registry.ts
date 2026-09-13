@@ -102,7 +102,14 @@ export const SERVICE_REGISTRY: Record<ServiceName, ServiceEntry> = {
             location: "San Francisco",
           },
         ],
-        orgs: [{ login: "my-org", name: "My Organization", description: "A test organization" }],
+        orgs: [
+          {
+            login: "my-org",
+            name: "My Organization",
+            description: "A test organization",
+            members: [{ login: "octocat", role: "admin" }],
+          },
+        ],
         repos: [
           {
             owner: "octocat",

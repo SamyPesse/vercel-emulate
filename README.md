@@ -235,6 +235,9 @@ github:
   orgs:
     - login: my-org
       name: My Organization
+      members:
+        - login: octocat
+          role: admin
   repos:
     - owner: octocat
       name: hello-world
@@ -467,6 +470,8 @@ aws:
       - role_name: lambda-execution-role
         description: Role for Lambda function execution
 ```
+
+GitHub organization `members` are optional. Each entry references a seeded user by `login`; `role` defaults to `member`, while `admin` creates an organization administrator. Unknown users are ignored. Seeded memberships use the synthetic `members` team and grant private organization repository access.
 
 ## OAuth & Integrations
 

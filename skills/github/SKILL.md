@@ -179,6 +179,9 @@ github:
       name: My Organization
       description: A test organization
       email: org@example.com
+      members:
+        - login: octocat
+          role: admin
   repos:
     - owner: octocat
       name: hello-world
@@ -198,6 +201,8 @@ github:
       redirect_uris:
         - http://localhost:3000/api/auth/callback/github
 ```
+
+Organization `members` are optional. Each entry references a seeded user by `login`; `role` defaults to `member`, and `admin` maps to the organization administrator role. Unknown users are ignored. Seeded memberships use the synthetic `members` team and grant private organization repository access.
 
 Repos are auto-initialized with a commit, branch, and README unless `auto_init: false` is set.
 
