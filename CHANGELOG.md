@@ -1,13 +1,35 @@
 # Changelog
 
 <!-- release:start -->
+## 0.11.2
+
+### New Features
+
+- **GitHub raw media negotiation** adds Accept-based binary responses for Contents and README endpoints (#237)
+- **Google Calendar discovery** adds an unauthenticated Calendar v3 discovery document for local clients (#238)
+- **GitHub organization membership seeding** adds `orgs[].members` configuration with member and admin roles (#240)
+- **Resend idempotency keys** make email and batch sends replayable without duplicate records or webhooks (#239)
+
+### Improvements
+
+- **Slack message limits** enforce Slack's 40,000-character limit with safe truncation and warning metadata (#244)
+- **Google OIDC verification** issues RS256-signed ID tokens and exposes the matching JWKS endpoint (#247)
+- **Configuration examples and service docs** now reflect the current emulator registry and CLI options (#248)
+
+### Bug Fixes
+
+- Fixed **GitHub Checks** list endpoints for slash-containing branch and tag refs (#246)
+- Fixed **GitHub App installation writes** to authenticate as the App bot for organization installations (#242)
+- Fixed **AWS S3** uploads, copies, and downloads to preserve arbitrary binary payloads (#241, #245)
+- Fixed **Microsoft refresh tokens** to remain bound to the OAuth client that issued them (#243)
+
+<!-- release:end -->
+
 ## 0.11.1
 
 ### Improvements
 
 - **Vercel v7 deployment listing** adds authenticated `GET /v7/deployments` with commit-SHA filtering across projects, team scoping, and pagination (#234)
-
-<!-- release:end -->
 
 ## 0.11.0
 
