@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { startCommand } from "./commands/start.js";
 import { initCommand } from "./commands/init.js";
 import { listCommand } from "./commands/list.js";
+import { SERVICE_NAMES } from "./registry.js";
 
 declare const PKG_VERSION: string;
 const pkg = { version: PKG_VERSION };
@@ -51,6 +52,18 @@ Microsoft OAuth coverage:
 
 Webhook signatures:
   Stripe webhook secrets produce a Stripe-Signature header for raw-body verification.
+
+Available services:
+  ${SERVICE_NAMES.join(", ")}
+  Run 'npx emulate list' for endpoint summaries.
+
+Configuration:
+  Run 'npx emulate init' to create a starter emulate.config.yaml, or pass --seed <file>.
+  GitHub App private keys may be omitted for createEmulator; CLI startup generates omitted keys only with
+  --generated-secrets-file <path>.
+
+Twilio API coverage:
+  Accounts, API keys, phone numbers, Messaging, Verify, Voice, Conversations, webhooks, simulators, and inspector.
 
 Slack message limits:
   Slack text fields are limited to 40,000 Unicode characters. Longer text is truncated safely,

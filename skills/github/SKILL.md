@@ -1,7 +1,7 @@
 ---
 name: github
 description: Emulated GitHub REST API for local development and testing. Use when the user needs to interact with GitHub API endpoints locally, test GitHub integrations, emulate repos/issues/PRs, set up GitHub OAuth flows, configure GitHub Apps, test webhooks, or work with actions/checks without hitting the real GitHub API. Triggers include "GitHub API", "emulate GitHub", "mock GitHub", "test GitHub OAuth", "GitHub App JWT", "local GitHub", or any task requiring a local GitHub API.
-allowed-tools: Bash(npx emulate:*), Bash(emulate:*), Bash(curl:*)
+allowed-tools: Bash(npx emulate:*), Bash(curl:*)
 ---
 
 # GitHub API Emulator
@@ -79,7 +79,7 @@ Installation access tokens act as the configured GitHub App bot for repository w
 
 ### GitHub App JWT
 
-Configure apps in the seed config with a private key. Sign a JWT with `{ iss: "<app_id>" }` using RS256. The emulator verifies the signature and resolves the app.
+Configure apps in the seed config with an explicit, valid private key when using the CLI without generated secrets. Sign a JWT with `{ iss: "<app_id>" }` using RS256. The emulator verifies the signature and resolves the app.
 
 ```yaml
 github:
@@ -87,10 +87,6 @@ github:
     - app_id: 12345
       slug: my-github-app
       name: My GitHub App
-      private_key: |
-        -----BEGIN RSA PRIVATE KEY-----
-        ...
-        -----END RSA PRIVATE KEY-----
       permissions:
         contents: read
         issues: write
@@ -107,6 +103,8 @@ github:
           events: [push]
           repositories: [my-org/org-repo]
 ```
+
+This example intentionally omits `private_key` for programmatic and adapter usage, where the emulator generates an RSA key and exposes it through `generatedSecrets`. For CLI usage, request a private delivery file with `--generated-secrets-file <path>` or provide your own valid key. Without that flag, CLI seed files require `private_key`; do not use a placeholder PEM.
 
 ## Pointing Your App at the Emulator
 

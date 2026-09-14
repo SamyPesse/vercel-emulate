@@ -411,9 +411,13 @@ linear:
     - name: Bug
       color: "#d92d20"
       team: ENG
+    - name: Feature
+      color: "#2563eb"
+      team: ENG
   issues:
     - team: ENG
       title: Fix local checkout test
+      description: Reproduce and fix the checkout failure.
       state: Todo
       assignee: dev@example.com
       labels: [Bug]
@@ -424,6 +428,7 @@ linear:
       redirect_uris:
         - http://localhost:3000/api/auth/callback/linear
       scopes: [read, write, issues:create, comments:create]
+      actor: user
   tokens:
     - token: lin_test_admin
       user: admin@example.com
@@ -469,6 +474,108 @@ aws:
     roles:
       - role_name: lambda-execution-role
         description: Role for Lambda function execution
+
+okta:
+  users:
+    - login: testuser@okta.local
+      email: testuser@okta.local
+      first_name: Test
+      last_name: User
+  groups:
+    - name: Everyone
+      description: All users
+      type: BUILT_IN
+      okta_id: 00g_everyone
+  authorization_servers:
+    - id: default
+      name: default
+      audiences: [api://default]
+  oauth_clients:
+    - client_id: okta-test-client
+      client_secret: okta-test-secret
+      name: Sample OIDC Client
+      redirect_uris:
+        - http://localhost:3000/callback
+      auth_server_id: default
+
+resend:
+  domains:
+    - name: example.com
+      region: us-east-1
+  contacts:
+    - email: test@example.com
+      first_name: Test
+      last_name: User
+
+stripe:
+  customers:
+    - email: test@example.com
+      name: Test Customer
+  products:
+    - name: Pro Plan
+      description: Monthly pro subscription
+  prices:
+    - product_name: Pro Plan
+      currency: usd
+      unit_amount: 2000
+
+mongoatlas:
+  projects:
+    - name: Project0
+  clusters:
+    - name: Cluster0
+      project: Project0
+  database_users:
+    - username: admin
+      project: Project0
+  databases:
+    - cluster: Cluster0
+      name: test
+      collections: [items]
+
+clerk:
+  users:
+    - first_name: Test
+      last_name: User
+      email_addresses: [test@example.com]
+      password: clerk_test_password
+  organizations:
+    - name: My Company
+      slug: my-company
+      members:
+        - email: test@example.com
+          role: admin
+  oauth_applications:
+    - client_id: clerk_emulate_client
+      client_secret: clerk_emulate_secret
+      name: Emulate App
+      redirect_uris:
+        - http://localhost:3000/api/auth/callback/clerk
+
+twilio:
+  account:
+    sid: AC00000000000000000000000000000000
+    auth_token: twilio_test_auth_token
+    friendly_name: Local Twilio Account
+  api_keys:
+    - sid: SK00000000000000000000000000000000
+      secret: twilio_test_api_secret
+      friendly_name: Local API Key
+  phone_numbers:
+    - phone_number: "+15551234567"
+      friendly_name: Local SMS and Voice Number
+      sms_url: http://localhost:3000/api/twilio/sms
+      voice_url: http://localhost:3000/api/twilio/voice
+  messaging_services:
+    - friendly_name: Local Messaging Service
+      phone_numbers: ["+15551234567"]
+  verify_services:
+    - friendly_name: Local Verify Service
+      code: "123456"
+      default_channel: sms
+  conversations:
+    services:
+      - friendly_name: Local Conversations
 ```
 
 GitHub organization `members` are optional. Each entry references a seeded user by `login`; `role` defaults to `member`, while `admin` creates an organization administrator. Unknown users are ignored. Seeded memberships use the synthetic `members` team and grant private organization repository access.
@@ -513,10 +620,6 @@ github:
     - app_id: 12345
       slug: "my-github-app"
       name: "My GitHub App"
-      private_key: |
-        -----BEGIN RSA PRIVATE KEY-----
-        ...your PEM key...
-        -----END RSA PRIVATE KEY-----
       permissions:
         contents: read
         issues: write
@@ -529,7 +632,7 @@ github:
           repository_selection: all
 ```
 
-JWT authentication: sign a JWT with `{ iss: "<app_id>" }` using the app's private key (RS256). The emulator verifies the signature and resolves the app.
+JWT authentication: sign a JWT with `{ iss: "<app_id>" }` using the app's private key (RS256). The emulator verifies the signature and resolves the app. For programmatic `createEmulator` calls, omit `private_key` and read the generated RSA key from `generatedSecrets`. The CLI generates an omitted key only when `--generated-secrets-file <path>` is provided; otherwise it requires an explicit, valid private key. Do not replace the omitted field with a fake PEM placeholder.
 
 Installation access tokens act as the configured GitHub App bot for repository writes. Repository ownership, selected repository access, and requested App permissions remain enforced. Pull request merges require `contents: write` on the base repository. Pull request branch updates require `pull_requests: write` on the pull request repository and `contents: write` on the head repository.
 
