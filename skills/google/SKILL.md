@@ -199,7 +199,7 @@ curl http://localhost:4002/.well-known/openid-configuration
 curl http://localhost:4002/oauth2/v3/certs
 ```
 
-Returns `{ "keys": [] }`. ID tokens are signed with HS256 using an internal secret.
+Returns the RSA public key used to verify the ID tokens issued by the emulator. Google ID tokens use RS256, and the discovery document advertises the same algorithm.
 
 ### Authorization
 

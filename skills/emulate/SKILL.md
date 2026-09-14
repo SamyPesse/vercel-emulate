@@ -185,6 +185,9 @@ github:
   orgs:
     - login: my-org
       name: My Organization
+      members:
+        - login: octocat
+          role: admin
   repos:
     - owner: octocat
       name: hello-world
@@ -419,6 +422,8 @@ twilio:
 ```
 
 GitHub App `private_key` values are intentionally omitted from starter configuration. Programmatic `createEmulator` calls generate an RSA key and expose it through `generatedSecrets`. CLI startup generates omitted keys only when `--generated-secrets-file <path>` is provided; otherwise the seed must contain an explicit, valid private key. Never use a placeholder PEM value.
+
+GitHub organization `members` are optional. Entries reference seeded users by `login`; `role` defaults to `member`, while `admin` creates an organization administrator. Unknown users are ignored.
 
 ### Auth
 
