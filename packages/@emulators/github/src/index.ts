@@ -19,6 +19,7 @@ import { issuesRoutes } from "./routes/issues.js";
 import { pullsRoutes } from "./routes/pulls.js";
 import { commentsRoutes } from "./routes/comments.js";
 import { reviewsRoutes } from "./routes/reviews.js";
+import { reactionsRoutes } from "./routes/reactions.js";
 import { labelsAndMilestonesRoutes } from "./routes/labels.js";
 import { branchesAndGitRoutes } from "./routes/branches.js";
 import { contentsRoutes } from "./routes/contents.js";
@@ -663,6 +664,7 @@ export const githubPlugin: ServicePlugin = {
     pullsRoutes(ctx);
     commentsRoutes(ctx);
     reviewsRoutes(ctx);
+    reactionsRoutes(ctx);
     labelsAndMilestonesRoutes(ctx);
     branchesAndGitRoutes(ctx);
     orgsAndTeamsRoutes(ctx);
