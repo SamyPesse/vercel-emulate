@@ -26,6 +26,9 @@ GitHub API coverage:
   Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
   commit history, commit details, ref comparisons, organization membership seeding with member/admin roles,
   and Checks list-by-ref endpoints for branch and tag refs containing slashes.
+  User installation discovery respects explicit repository access and supports pagination.
+  Issue, pull-request body, and comment reactions support list/create/delete with derived counts.
+  Pull-request issue-comment webhooks include issue.pull_request metadata. Reactions emit no webhooks.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
