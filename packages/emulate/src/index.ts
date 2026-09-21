@@ -63,6 +63,9 @@ GitHub API coverage:
   Checks retain the authenticated installation's App in API responses and webhooks.
   Suites are separated by App and commit; latest runs are grouped by App and check name.
   User-token checks return app: null; request-body app_id cannot change attribution.
+  User installation discovery respects explicit repository access and supports pagination.
+  Issue, pull-request body, and comment reactions support list/create/delete with derived counts.
+  Pull-request issue-comment webhooks include issue.pull_request metadata. Reactions emit no webhooks.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
