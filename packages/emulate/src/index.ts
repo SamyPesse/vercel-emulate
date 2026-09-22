@@ -29,6 +29,8 @@ GitHub API coverage:
   User installation discovery respects explicit repository access and supports pagination.
   Issue, pull-request body, and comment reactions support list/create/delete with derived counts.
   Pull-request issue-comment webhooks include issue.pull_request metadata. Reactions emit no webhooks.
+  Review comments validate diff paths/lines; replies keep their parent's location.
+  Git refs and Contents writes advance open PR heads and emit pull_request.synchronize.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
