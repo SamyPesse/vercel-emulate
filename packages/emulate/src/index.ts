@@ -31,6 +31,9 @@ GitHub API coverage:
   Pull-request issue-comment webhooks include issue.pull_request metadata. Reactions emit no webhooks.
   Review comments validate diff paths/lines; replies keep their parent's location.
   Git refs and Contents writes advance open PR heads and emit pull_request.synchronize.
+  Pending reviews support incremental GraphQL comments, submission, and discard; summaries are editable.
+  POST /graphql also supports paginated review threads, resolution, and draft/ready transitions.
+  GraphQL is a collaboration subset, not the complete GitHub schema.
   Inspect minted installation-token metadata at GET /_emulate/installation-tokens.
 
 Linear API coverage:
