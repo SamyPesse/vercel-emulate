@@ -64,6 +64,7 @@ GitHub API coverage:
   Suites are separated by App and commit; latest runs are grouped by App and check name.
   User-token checks return app: null; request-body app_id cannot change attribution.
   User installation discovery respects explicit repository access and supports pagination.
+  Installation tokens list paginated repositories within their current installation grants.
   Issue, pull-request body, and comment reactions support list/create/delete with derived counts.
   Pull-request issue-comment webhooks include issue.pull_request metadata. Reactions emit no webhooks.
   Review comments validate diff paths/lines; replies keep their parent's location.
