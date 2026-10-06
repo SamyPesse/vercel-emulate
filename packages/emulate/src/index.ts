@@ -59,6 +59,7 @@ GitHub API coverage:
   commit history, commit details, ref comparisons, organization membership seeding with member/admin roles,
   and Checks list-by-ref endpoints for branch and tag refs containing slashes.
   User installation discovery respects explicit repository access and supports pagination.
+  Installation tokens list paginated repositories within their current installation grants.
   Issue, pull-request body, and comment reactions support list/create/delete with derived counts.
   Pull-request issue-comment webhooks include issue.pull_request metadata. Reactions emit no webhooks.
   Review comments validate diff paths/lines; replies keep their parent's location.
