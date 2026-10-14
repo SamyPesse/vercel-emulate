@@ -55,6 +55,7 @@ Custom emulators:
   Docs: https://emulate.dev/docs/custom-emulators
 
 GitHub API coverage:
+  Commit statuses support create, paginated history by ref, and signed status webhooks; combined summaries are not implemented.
   Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
   commit history, commit details, ref comparisons, organization membership seeding with member/admin roles,
   and Checks list-by-ref endpoints for branch and tag refs containing slashes.
