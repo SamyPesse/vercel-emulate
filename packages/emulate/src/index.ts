@@ -55,6 +55,8 @@ Custom emulators:
   Docs: https://emulate.dev/docs/custom-emulators
 
 GitHub API coverage:
+  User ID lookup and requested-reviewer listing use stored identities; removals emit review_request_removed.
+  Requests reject the PR author; submitted reviews clear that user request while drafts retain it.
   Commit statuses support create, paginated history by ref, and signed status webhooks; combined summaries are not implemented.
   Includes repository contents, raw downloads, raw media negotiation for file Contents and README responses,
   commit history, commit details, ref comparisons, organization membership seeding with member/admin roles,
