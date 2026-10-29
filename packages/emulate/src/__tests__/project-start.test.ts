@@ -212,7 +212,7 @@ describe("CLI watch lifecycle", () => {
         expect.any(Function),
       ),
     );
-    expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining("Watching imports"));
+    expect(console.log).not.toHaveBeenCalled();
     expect(broken.connected).toBe(false);
   });
 });

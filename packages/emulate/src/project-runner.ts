@@ -217,7 +217,9 @@ export async function prepareProject(
       },
     };
   } catch (error) {
-    await close();
+    await close().catch((cleanup) => {
+      throw new AggregateError([error, cleanup], `${error instanceof Error ? error.message : error}; cleanup failed`);
+    });
     throw error;
   }
 }

@@ -24,6 +24,9 @@ Framework adapters:
   Embed emulators in app routes with @emulators/adapter-next or @emulators/adapter-nuxt.
   Docs: https://emulate.dev/docs/nextjs and https://emulate.dev/docs/nuxt
 
+MCP:
+  Run 'npx emulate mcp' for stdio tools backed by CLI commands.
+
 Networking:
   Built-in and custom listeners bind to 127.0.0.1 by default.
   Use --host 0.0.0.0 for access from containers or other machines.

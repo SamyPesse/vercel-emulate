@@ -16,6 +16,7 @@ export const docsSections: NavSection[] = [
       { name: "Custom Emulators", href: "/docs/custom-emulators" },
       { name: "Programmatic API", href: "/docs/programmatic-api" },
       { name: "Configuration", href: "/docs/configuration" },
+      { name: "MCP Server", href: "/docs/mcp" },
       { name: "Next.js Integration", href: "/docs/nextjs" },
       { name: "Nuxt Integration", href: "/docs/nuxt" },
     ],

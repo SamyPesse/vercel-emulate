@@ -301,4 +301,21 @@ describe("custom configuration and scaffold", () => {
       "Duplicate port",
     );
   });
+
+  it("preserves the preparation error when an earlier service also fails cleanup", async () => {
+    const dir = await project();
+    const config = join(dir, "emulate.config.mjs");
+    await writeFile(
+      config,
+      `import { defineEmulator } from "emulate";
+export default { services: {
+  first: { emulator: defineEmulator({ name: "first", state: () => ({}), setup({ onDispose }) {
+    onDispose(() => { throw new Error("dispose failed"); });
+  } }) },
+  second: { emulator: defineEmulator({ name: "second", state: () => ({}), setup() {} }),
+    persistence: { load: async () => { throw new Error("load failed"); }, save: async () => {} } }
+} };`,
+    );
+    await expect(prepareProject({ port: 4000, config })).rejects.toThrow("load failed; cleanup failed");
+  });
 });

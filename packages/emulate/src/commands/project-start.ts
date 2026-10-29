@@ -20,8 +20,8 @@ function printReady(metadata: RunMetadata, watching: boolean) {
   }
   lines.push(`\n  ${watching ? "Watching imports and fixtures. Reloads reset state to seed." : "Ready."}`);
   const text = lines.join("\n");
-  console.log(text);
   if (process.connected) process.send?.({ type: "emulate:ready", text }, () => {});
+  else console.log(text);
 }
 
 function receive(child: ChildProcess, wanted: string, timeout = 30000): Promise<any> {

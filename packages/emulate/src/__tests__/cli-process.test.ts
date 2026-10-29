@@ -17,15 +17,15 @@ async function availablePort() {
   return port;
 }
 
-it.each(["ipc", "disconnect", ...(process.platform === "win32" ? [] : ["SIGTERM" as const])] as const)(
-  "prints readiness, sends the same text over IPC, and releases the listener on %s",
+it.each(["ipc", "disconnect", ...(process.platform === "win32" ? [] : (["terminal", "SIGTERM"] as const))] as const)(
+  "reports readiness and releases the listener on %s",
   async (event) => {
     const directory = await mkdtemp(join(tmpdir(), "emulate-cli-"));
     const port = await availablePort();
     const child = spawn(process.execPath, [cli, "start", "--service", "resend", "--port", String(port)], {
       cwd: directory,
       env: { ...process.env, CI: "1", EMULATE_BASE_URL: "", PORTLESS_URL: "" },
-      stdio: ["ignore", "pipe", "pipe", "ipc"],
+      stdio: event === "terminal" ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "pipe", "ipc"],
     });
     let stdout = "";
     child.stdout!.on("data", (chunk) => {
@@ -37,19 +37,29 @@ it.each(["ipc", "disconnect", ...(process.platform === "win32" ? [] : ["SIGTERM"
       child.kill("SIGKILL");
     }, 10000);
     try {
-      const [message] = await Promise.race([
-        once(child, "message"),
+      const ready =
+        event === "terminal"
+          ? new Promise<void>((resolve) =>
+              child.stdout!.on("data", () => {
+                if (stdout.includes("Ready.")) resolve();
+              }),
+            )
+          : once(child, "message").then(([message]) => {
+              expect(message).toEqual({ type: "emulate:ready", text: expect.stringContaining("Ready.") });
+            });
+      await Promise.race([
+        ready,
         exited.then(([code, signal]) => {
           throw new Error(`CLI exited before readiness (${signal ?? code})`);
         }),
       ]);
-      expect(message).toEqual({ type: "emulate:ready", text: expect.stringContaining("Ready.") });
       expect((await fetch(`http://127.0.0.1:${port}/emails`, { signal: AbortSignal.timeout(3000) })).status).toBe(200);
       if (event === "ipc") child.send({ type: "emulate:stop" });
       else if (event === "disconnect") child.disconnect();
-      else child.kill(event);
+      else child.kill(event === "terminal" ? "SIGTERM" : event);
       expect(await exited).toEqual([0, null]);
-      expect(stdout).toBe(`${message.text}\n`);
+      if (event === "terminal") expect(stdout).toContain("Ready.");
+      else expect(stdout).toBe("");
       await expect(fetch(`http://127.0.0.1:${port}/emails`, { signal: AbortSignal.timeout(1000) })).rejects.toThrow();
     } finally {
       child.kill("SIGKILL");
