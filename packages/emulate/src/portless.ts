@@ -10,10 +10,17 @@ function hasPortless(): boolean {
   return result.status === 0;
 }
 
-function promptYesNo(question: string): Promise<boolean> {
-  return new Promise((resolve) => {
+function promptYesNo(question: string, signal?: AbortSignal): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
     const rl = createInterface({ input: process.stdin, output: process.stdout });
+    const abort = () => {
+      rl.close();
+      reject(signal!.reason);
+    };
+    signal?.addEventListener("abort", abort, { once: true });
     rl.question(question, (answer) => {
+      signal?.removeEventListener("abort", abort);
       rl.close();
       const normalized = answer.trim().toLowerCase();
       resolve(normalized === "" || normalized === "y" || normalized === "yes");
@@ -34,14 +41,17 @@ function failPortless(message: string, throwOnFailure: boolean): never {
   process.exit(1);
 }
 
-export async function ensurePortless(options: { throwOnFailure?: boolean } = {}): Promise<void> {
+export async function ensurePortless(options: { throwOnFailure?: boolean; signal?: AbortSignal } = {}): Promise<void> {
   const throwOnFailure = options.throwOnFailure ?? false;
   if (!hasPortless()) {
     if (!isInteractive()) {
       failPortless("portless is required but not installed. Run: npm i -g portless", throwOnFailure);
     }
 
-    const yes = await promptYesNo("portless is not installed. Install it now? (npm i -g portless) [Y/n] ");
+    const yes = await promptYesNo(
+      "portless is not installed. Install it now? (npm i -g portless) [Y/n] ",
+      options.signal,
+    );
     if (!yes) {
       failPortless("Cannot continue without portless.", throwOnFailure);
     }

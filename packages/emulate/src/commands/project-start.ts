@@ -12,13 +12,16 @@ import {
 } from "../generated-secrets-file.js";
 
 function printReady(metadata: RunMetadata, watching: boolean) {
-  console.log("\nemulate\n");
+  const lines = ["\nemulate\n"];
   for (const service of metadata.services) {
-    console.log(`  ${service.name}  ${service.url}\n    Source: ${service.source}`);
+    lines.push(`  ${service.name}  ${service.url}\n    Source: ${service.source}`);
     if (service.inspectorUrl)
-      console.log(`    Inspector: ${service.inspectorUrl}\n    Routes: ${service.inspectorUrl}?tab=routes`);
+      lines.push(`    Inspector: ${service.inspectorUrl}\n    Routes: ${service.inspectorUrl}?tab=routes`);
   }
-  console.log(`\n  ${watching ? "Watching imports and fixtures. Reloads reset state to seed." : "Ready."}`);
+  lines.push(`\n  ${watching ? "Watching imports and fixtures. Reloads reset state to seed." : "Ready."}`);
+  const text = lines.join("\n");
+  console.log(text);
+  if (process.connected) process.send?.({ type: "emulate:ready", text }, () => {});
 }
 
 function receive(child: ChildProcess, wanted: string, timeout = 30000): Promise<any> {
@@ -73,50 +76,111 @@ async function stop(child?: ChildProcess) {
   }
 }
 
-export async function projectStartCommand(options: ProjectOptions): Promise<void> {
-  const target = options.generatedSecretsFile
-    ? await preflightGeneratedSecretsFile(options.generatedSecretsFile)
+export async function projectStartCommand(options: ProjectOptions): Promise<{ close(): Promise<void> }> {
+  const controller = new AbortController();
+  let cleanup: (() => Promise<void>) | undefined;
+  let closing: Promise<void> | undefined;
+  const run = {
+    close() {
+      return (closing ??= Promise.resolve().then(async () => {
+        controller.abort(new Error("Emulator startup stopped"));
+        try {
+          await cleanup?.();
+        } finally {
+          process.off("SIGINT", shutdown);
+          process.off("SIGTERM", shutdown);
+          process.off("disconnect", shutdown);
+          process.off("message", onMessage);
+        }
+      }));
+    },
+  };
+  const shutdown = () => {
+    if (closing) return;
+    void run.close().then(
+      () => process.exit(0),
+      (error) => {
+        console.error(error);
+        process.exit(1);
+      },
+    );
+  };
+  const onMessage = (message: unknown) => {
+    if (message && typeof message === "object" && "type" in message && message.type === "emulate:stop") shutdown();
+  };
+  process.on("message", onMessage);
+  process.once("SIGINT", shutdown);
+  process.once("SIGTERM", shutdown);
+  process.once("disconnect", shutdown);
+  try {
+    await startProject(options, controller.signal, (close) => {
+      cleanup = close;
+    });
+    return run;
+  } catch (error) {
+    await run.close().catch(console.error);
+    throw error;
+  }
+}
+
+async function startProject(options: ProjectOptions, signal: AbortSignal, own: (close: () => Promise<void>) => void) {
+  async function setupPortless(aliases: PortlessAlias[]) {
+    await ensurePortless({ throwOnFailure: true, signal });
+    signal.throwIfAborted();
+    registerAliases(aliases);
+  }
+  const preflighting = options.generatedSecretsFile
+    ? preflightGeneratedSecretsFile(options.generatedSecretsFile)
     : undefined;
+  own(async () => {
+    await preflighting?.catch(() => undefined);
+  });
+  const target = await preflighting;
+  signal.throwIfAborted();
   let published: PublishedGeneratedSecretsFile | undefined;
   let deliveredSecrets: string | undefined;
   let aliases: PortlessAlias[] = [];
   if (!options.watch) {
-    const run = await prepareProject(options);
-    try {
-      if (target)
-        published = await publishGeneratedSecretsFile(target, {
-          schemaVersion: 1,
-          generatedSecrets: run.metadata.secrets,
-        });
-      if (options.portless) {
-        await ensurePortless({ throwOnFailure: true });
-        registerAliases(run.metadata.aliases);
-        aliases = run.metadata.aliases;
+    let preparing: ReturnType<typeof prepareProject> | undefined;
+    let publishing: Promise<PublishedGeneratedSecretsFile> | undefined;
+    let ready = false;
+    const close = async () => {
+      const run = await preparing?.catch((error) => {
+        if (error instanceof AggregateError) throw error;
+        return undefined;
+      });
+      try {
+        await run?.close();
+      } finally {
+        removeAliases(aliases);
+        if (!ready)
+          await publishing?.then(
+            (file) => file.rollback(),
+            () => undefined,
+          );
       }
-      await run.start();
-      printReady(run.metadata, false);
-    } catch (error) {
-      await run.close().catch(console.error);
-      removeAliases(aliases);
-      await published?.rollback();
-      throw error;
-    }
-    let stopping = false;
-    const shutdown = () => {
-      if (stopping) return;
-      stopping = true;
-      void run
-        .close()
-        .catch(console.error)
-        .finally(() => {
-          removeAliases(aliases);
-          process.exit(0);
-        });
     };
-    process.once("SIGINT", shutdown);
-    process.once("SIGTERM", shutdown);
+    own(close);
+    signal.throwIfAborted();
+    const run = await (preparing = prepareProject(options, {}, false, undefined, signal));
+    signal.throwIfAborted();
+    if (target)
+      await (publishing = publishGeneratedSecretsFile(target, {
+        schemaVersion: 1,
+        generatedSecrets: run.metadata.secrets,
+      }));
+    signal.throwIfAborted();
+    if (options.portless) {
+      await setupPortless(run.metadata.aliases);
+      aliases = run.metadata.aliases;
+    }
+    await run.start();
+    signal.throwIfAborted();
+    ready = true;
+    printReady(run.metadata, false);
     return;
   }
+
   const configPath = findConfig(options.config ?? options.seed);
   const directory = configPath ? dirname(configPath) : process.cwd();
   const configCandidates = options.config || options.seed ? [] : CONFIG_FILES.map((name) => resolve(directory, name));
@@ -133,12 +197,16 @@ export async function projectStartCommand(options: ProjectOptions): Promise<void
   let queued = false;
   let loading = false;
   let debounce: ReturnType<typeof setTimeout> | undefined;
-  async function reload() {
-    if (stopped) return;
+  let activeReload: Promise<void> | undefined;
+  function queueReload(): Promise<void> {
     if (loading) {
       queued = true;
-      return;
+      return activeReload!;
     }
+    return (activeReload = reload());
+  }
+  async function reload() {
+    if (stopped) return;
     loading = true;
     const attemptedDependencies = new Set<string>();
     let candidateProcess: ChildProcess | undefined;
@@ -156,10 +224,7 @@ export async function projectStartCommand(options: ProjectOptions): Promise<void
       const prepared = receive(candidate, "prepared");
       candidate.send({ type: "prepare", options, retained, reload: successful });
       const { metadata } = (await prepared) as { metadata: RunMetadata };
-      if (stopped) {
-        await stop(candidate);
-        return;
-      }
+      if (stopped) return;
       const secretsIdentity = JSON.stringify(metadata.secrets.map((secret) => JSON.stringify(secret)).sort());
       if (published && deliveredSecrets !== secretsIdentity)
         throw new Error(
@@ -175,18 +240,17 @@ export async function projectStartCommand(options: ProjectOptions): Promise<void
       removeAliases(aliases);
       aliases = [];
       if (options.portless) {
-        await ensurePortless({ throwOnFailure: true });
-        if (stopped) return;
-        registerAliases(metadata.aliases);
+        await setupPortless(metadata.aliases);
+        if (stopped) {
+          removeAliases(metadata.aliases);
+          return;
+        }
         aliases = metadata.aliases;
       }
       const started = receive(candidate, "started");
       candidate.send({ type: "start" });
       await started;
-      if (stopped) {
-        await stop(candidate);
-        return;
-      }
+      if (stopped) return;
       worker = candidate;
       candidate = undefined;
       dependencies = new Set([...configCandidates, ...metadata.dependencies, ...lazyDependencies]);
@@ -207,20 +271,27 @@ export async function projectStartCommand(options: ProjectOptions): Promise<void
         void watcher.update(dependencies, patterns, true).catch(console.error);
         removeAliases(aliases);
         aliases = [];
-        console.error(`Emulator runner exited (${signal ?? code}). Save a source file to restart.`);
+        const error = `Emulator runner exited (${signal ?? code}). Save a source file to restart.`;
+        console.error(error);
       });
       retained = metadata.retained;
-      successful = true;
       failed = false;
       await watcher.update(dependencies, patterns, false);
+      if (stopped) return;
+      successful = true;
       printReady(metadata, true);
     } catch (error) {
+      if (stopped) return;
       failed = true;
       dependencies = new Set([...dependencies, ...attemptedDependencies]);
       await watcher.update(dependencies, patterns, true);
-      console.error(
-        `\nReload failed${worker ? "; serving the last successful version" : ""}. Fix the source and save to retry.\n${error instanceof Error ? error.message : error}`,
-      );
+      const message = `\nReload failed${worker ? "; serving the last successful version" : ""}. Fix the source and save to retry.\n${error instanceof Error ? error.message : error}`;
+      console.error(message);
+      if (!successful && process.connected)
+        process.send?.(
+          { type: "emulate:error", error: error instanceof Error ? error.message : String(error) },
+          () => {},
+        );
       await stop(candidate);
       candidate = undefined;
       if (!worker) {
@@ -237,7 +308,7 @@ export async function projectStartCommand(options: ProjectOptions): Promise<void
       loading = false;
       if (queued && !stopped) {
         queued = false;
-        void reload();
+        void queueReload();
       }
     }
   }
@@ -247,22 +318,28 @@ export async function projectStartCommand(options: ProjectOptions): Promise<void
       if (stopped || (options.generatedSecretsFile && path === resolve(options.generatedSecretsFile))) return;
       clearTimeout(debounce);
       debounce = setTimeout(() => {
-        void reload();
+        void queueReload();
       }, 100);
     },
     (error) => console.error("Watch error:", error),
   );
-  const shutdown = () => {
-    if (stopped) return;
+  own(async () => {
     stopped = true;
     clearTimeout(debounce);
-    void Promise.allSettled([watcher.close(), stop(worker), stop(candidate)]).finally(() => {
+    try {
+      const results = await Promise.allSettled([watcher.close(), stop(worker), stop(candidate)]);
+      await activeReload;
+      const errors = results.filter((result): result is PromiseRejectedResult => result.status === "rejected");
+      if (errors.length)
+        throw new AggregateError(
+          errors.map((result) => result.reason),
+          "Failed to shut down watch",
+        );
+    } finally {
       removeAliases(aliases);
-      process.exit(0);
-    });
-  };
-  process.once("SIGINT", shutdown);
-  process.once("SIGTERM", shutdown);
+      if (!successful) await published?.rollback();
+    }
+  });
   await watcher.start();
-  await reload();
+  if (!stopped) await queueReload();
 }

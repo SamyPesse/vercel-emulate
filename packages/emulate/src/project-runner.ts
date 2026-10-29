@@ -43,9 +43,11 @@ export async function prepareProject(
   retained: Record<string, RetainedSeed> = {},
   reload = false,
   onDependenciesChange?: (files: string[]) => void,
+  signal?: AbortSignal,
 ) {
   if (options.portless && options.baseUrl) throw new Error("--portless and --base-url are mutually exclusive");
-  const config = await loadConfig(options, onDependenciesChange);
+  signal?.throwIfAborted();
+  const config = await abortable(loadConfig(options, onDependenciesChange), signal, (config) => config.loader.close());
   const servers: Server[] = [];
   const cleanups: Array<() => void | Promise<void>> = [];
   const prepared: Array<{ fetch: (req: Request) => Response | Promise<Response>; port: number }> = [];
@@ -60,24 +62,28 @@ export async function prepareProject(
     retained: {},
   };
   let closed = false;
+  let closing: Promise<void> | undefined;
   let accepting = false;
-  async function close() {
-    if (closed) return;
+  function close(): Promise<void> {
+    if (closing) return closing;
     closed = true;
     accepting = false;
-    const results = await Promise.allSettled([
-      ...servers.map(closeHttpServer),
-      ...cleanups.reverse().map((fn) => Promise.resolve().then(fn)),
-    ]);
-    config.loader.close();
-    const errors = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
-    if (errors.length)
-      throw new AggregateError(
-        errors.map((r) => r.reason),
-        "Failed to shut down project",
-      );
+    return (closing = (async () => {
+      const results = await Promise.allSettled([
+        ...servers.map(closeHttpServer),
+        ...cleanups.reverse().map((fn) => Promise.resolve().then(fn)),
+      ]);
+      config.loader.close();
+      const errors = results.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+      if (errors.length)
+        throw new AggregateError(
+          errors.map((r) => r.reason),
+          "Failed to shut down project",
+        );
+    })());
   }
   try {
+    signal?.throwIfAborted();
     const ports = new Set<number>();
     for (const [index, service] of config.services.entries()) {
       const port = service.port ?? options.port + index;
@@ -87,6 +93,7 @@ export async function prepareProject(
       ports.add(port);
     }
     for (const [index, service] of config.services.entries()) {
+      signal?.throwIfAborted();
       const port = service.port ?? options.port + index;
       const baseUrl = resolveBaseUrl({
         service: service.name,
@@ -102,12 +109,16 @@ export async function prepareProject(
           throw new Error(
             `Seed for ${service.name} changed while generated secrets are in use. Restart with a new --generated-secrets-file path to apply the change.`,
           );
-        const result = await prepareStartServices(
-          [service.emulator],
-          { [service.emulator]: existing?.config ?? service.seed },
-          { port, baseUrl },
-          Boolean(options.generatedSecretsFile) && !existing,
+        const result = await abortable(
+          prepareStartServices(
+            [service.emulator],
+            { [service.emulator]: existing?.config ?? service.seed },
+            { port, baseUrl },
+            Boolean(options.generatedSecretsFile) && !existing,
+          ),
+          signal,
         );
+        signal?.throwIfAborted();
         const item = result.prepared[0];
         item.baseUrl = baseUrl;
         item.port = port;
@@ -130,7 +141,12 @@ export async function prepareProject(
         let active = false;
         let pending: string | undefined;
         const buffered: PersistenceAdapter | undefined = persistence && {
-          load: () => persistence.load(),
+          async load() {
+            signal?.throwIfAborted();
+            const data = await abortable(persistence.load(), signal);
+            signal?.throwIfAborted();
+            return data;
+          },
           async save(data) {
             pending = data;
             if (active) await persistence.save(data);
@@ -144,9 +160,10 @@ export async function prepareProject(
           resetPersistence: reload,
         });
         cleanups.push(() => runtime.close());
+        signal?.throwIfAborted();
         activations.push(async () => {
-          if (persistence && pending !== undefined) await persistence.save(pending);
-          active = true;
+          if (persistence && pending !== undefined) await abortable(persistence.save(pending), signal);
+          if (!closed) active = true;
         });
         prepared.push({ fetch: runtime.fetch, port });
         metadata.services.push({
@@ -158,6 +175,7 @@ export async function prepareProject(
         });
       }
     }
+    signal?.throwIfAborted();
     metadata.dependencies = [...config.loader.dependencies];
     return {
       metadata,
@@ -168,6 +186,7 @@ export async function prepareProject(
       async start() {
         try {
           for (const item of prepared) {
+            if (closed) throw new Error("Project closed during startup");
             const server = serve({
               ...item,
               hostname: options.host,
@@ -185,7 +204,11 @@ export async function prepareProject(
               );
             }
           }
-          for (const activate of activations) await activate();
+          for (const activate of activations) {
+            if (closed) throw new Error("Project closed during startup");
+            await activate();
+          }
+          if (closed) throw new Error("Project closed during startup");
           accepting = true;
         } catch (error) {
           await close().catch((cleanup) => console.error(cleanup));
@@ -194,8 +217,28 @@ export async function prepareProject(
       },
     };
   } catch (error) {
-    await close().catch((cleanup) => console.error(cleanup));
+    await close();
     throw error;
+  }
+}
+
+async function abortable<T>(promise: Promise<T>, signal?: AbortSignal, cleanup?: (value: T) => void): Promise<T> {
+  if (!signal) return promise;
+  let abort!: () => void;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        abort = () => reject(signal.reason);
+        signal.addEventListener("abort", abort, { once: true });
+        if (signal.aborted) abort();
+      }),
+    ]);
+  } catch (error) {
+    if (signal.aborted && cleanup) void promise.then(cleanup, () => {}).catch((error) => console.error(error));
+    throw error;
+  } finally {
+    signal.removeEventListener("abort", abort);
   }
 }
 

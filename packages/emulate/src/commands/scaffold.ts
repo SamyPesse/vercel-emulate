@@ -189,7 +189,7 @@ export default {
 `;
 }
 
-export function scaffoldCommand(name: string, configOption?: string, cwd = process.cwd()): void {
+export function scaffoldCommand(name: string, configOption?: string, cwd = process.cwd()) {
   if (!/^[a-z][a-z0-9-]*$/.test(name) || isBuiltin(name))
     throw new Error(
       "Choose a custom name using lowercase letters, digits, and hyphens that does not match a built-in service",
@@ -237,11 +237,12 @@ export function scaffoldCommand(name: string, configOption?: string, cwd = proce
   writeFileSync(source, inventorySource(name), { flag: "wx" });
   writeFileSync(test, inventoryTest(name), { flag: "wx" });
   if (output !== undefined) writeFileSync(config, output, { flag: existing ? "w" : "wx" });
-  console.log(`Created ${relative(cwd, source)}\nCreated ${relative(cwd, test)}`);
+  const lines = [`Created ${relative(cwd, source)}\nCreated ${relative(cwd, test)}`];
   if (output === undefined)
-    console.log(`\nAdd this import to ${config}:\n${importLine}\n\nAdd this entry to services:\n${entryLine}`);
-  else console.log(`${existing ? "Updated" : "Created"} ${relative(cwd, config)}`);
-  console.log(
+    lines.push(`\nAdd this import to ${config}:\n${importLine}\n\nAdd this entry to services:\n${entryLine}`);
+  else lines.push(`${existing ? "Updated" : "Created"} ${relative(cwd, config)}`);
+  lines.push(
     `\nStart: npx emulate start --watch${configOption ? ` --config ${JSON.stringify(configOption)}` : ""}\nTest: node --test ${relative(cwd, test)}\nUse the ${name} URL and Inspector link printed by start to send requests and inspect state.`,
   );
+  console.log(lines.join("\n"));
 }

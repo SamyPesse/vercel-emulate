@@ -1,20 +1,24 @@
 import { SERVICE_REGISTRY } from "../registry.js";
 import { loadConfig } from "../config-loader.js";
 
-export async function listCommand(configPath?: string): Promise<void> {
-  console.log("\nAvailable services:\n");
-  for (const [name, entry] of Object.entries(SERVICE_REGISTRY)) {
-    console.log(`  ${name.padEnd(10)}${entry.label}`);
-    console.log(`            Endpoints: ${entry.endpoints}`);
-    console.log();
+export async function listCommand(configPath?: string) {
+  const services = Object.entries(SERVICE_REGISTRY).map(([name, entry]) => ({
+    name,
+    label: entry.label,
+    endpoints: entry.endpoints,
+  }));
+  const lines = ["\nAvailable services:\n"];
+  for (const service of services) {
+    lines.push(`  ${service.name.padEnd(10)}${service.label}`, `            Endpoints: ${service.endpoints}`, "");
   }
   const config = await loadConfig({ config: configPath });
   try {
-    const custom = config.services.filter(
-      (service) => typeof service.emulator !== "string" || service.emulator !== service.name,
-    );
-    if (custom.length) console.log("Configured instances:\n");
-    for (const service of custom) console.log(`  ${service.name.padEnd(16)}${service.source}`);
+    const configuredInstances = config.services
+      .filter((service) => typeof service.emulator !== "string" || service.emulator !== service.name)
+      .map(({ name, source }) => ({ name, source }));
+    if (configuredInstances.length) lines.push("Configured instances:\n");
+    for (const service of configuredInstances) lines.push(`  ${service.name.padEnd(16)}${service.source}`);
+    console.log(lines.join("\n"));
   } finally {
     config.loader.close();
   }
